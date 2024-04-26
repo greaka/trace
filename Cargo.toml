@@ -1,6 +1,6 @@
 [package]
 name = "trace"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 publish = ["ktra"]
 
@@ -8,6 +8,7 @@ publish = ["ktra"]
 
 [features]
 tower = ["dep:tower", "tower-layer"]
+actix = ["actix-web"]
 
 [dependencies]
 http = "1.1.0"
@@ -22,6 +23,7 @@ opentelemetry-semantic-conventions = "0.14.0"
 opentelemetry-jaeger-propagator = "0.1.0"
 tower-layer = { version = "0.3.2", optional = true }
 tower = { version = "0.4.13", optional = true }
+actix-web = { version = "4.5.1", optional = true }
 
 [package.metadata.docs.rs]
 all-features = true

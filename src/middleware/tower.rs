@@ -33,7 +33,7 @@ impl<S> Layer<S> for TraceLayer {
     }
 }
 
-// This service implements the Trace behavior
+/// This service implements the Trace behavior
 pub struct TraceService<S> {
     service: S,
 }

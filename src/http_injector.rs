@@ -21,7 +21,7 @@ pub fn inject_opentelemetry_context_into_request<T>(request: &mut Request<T>) ->
 /// Constructs a [`opentelemetry::Context`] from [`Request`] headers
 /// and assigns parent to the returned [`Span`].
 #[track_caller]
-pub fn extract_opentelemetry_context_from_request<T>(request: &Request<T>) -> Span {
+pub fn extract_opentelemetry_context_from_request<T: HttpHeaderProvider>(request: &T) -> Span {
     let context = global::get_text_map_propagator(|extractor| {
         extractor.extract(&RequestExtractor::new(request))
     });
@@ -65,25 +65,38 @@ impl<'a, T> Injector for RequestInjector<'a, T> {
     }
 }
 
-struct RequestExtractor<'a, T> {
-    request: &'a Request<T>,
+struct RequestExtractor<'a, T: HttpHeaderProvider> {
+    headers: &'a T,
 }
 
-impl<'a, T> RequestExtractor<'a, T> {
-    pub fn new(request: &'a Request<T>) -> Self {
-        RequestExtractor { request }
+impl<'a, T: HttpHeaderProvider> RequestExtractor<'a, T> {
+    pub fn new(headers: &'a T) -> Self {
+        RequestExtractor { headers }
     }
 }
 
-impl<'a, T> Extractor for RequestExtractor<'a, T> {
+impl<'a, T: HttpHeaderProvider> Extractor for RequestExtractor<'a, T> {
     fn get(&self, key: &str) -> Option<&str> {
-        self.request
-            .headers()
-            .get(key)
-            .and_then(|h| h.to_str().ok())
+        self.headers.get(key)
     }
 
     fn keys(&self) -> Vec<&str> {
-        self.request.headers().keys().map(|s| s.as_str()).collect()
+        self.headers.keys().collect()
+    }
+}
+
+pub trait HttpHeaderProvider {
+    fn get(&self, key: &str) -> Option<&str>;
+
+    fn keys(&self) -> impl Iterator<Item = &str>;
+}
+
+impl<T> HttpHeaderProvider for Request<T> {
+    fn get(&self, key: &str) -> Option<&str> {
+        self.headers().get(key).and_then(|x| x.to_str().ok())
+    }
+
+    fn keys(&self) -> impl Iterator<Item = &str> {
+        self.headers().keys().map(|x| x.as_str())
     }
 }
